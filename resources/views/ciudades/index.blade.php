@@ -43,7 +43,43 @@
         </form>
 
         @if ($paisSeleccionado)
-            <h2 class="h4">{{ $paisSeleccionado->Name }}</h2>
+
+            <h2 class="h4 mb-3">
+                {{ $paisSeleccionado->Name }}
+                <span class="badge text-bg-secondary align-middle">
+                    {{ $ciudades->count() }} {{ $ciudades->count() === 1 ? 'ciudad' : 'ciudades' }}
+                </span>
+            </h2>
+
+            {{-- Tabla de ciudades. `table-responsive` le da scroll horizontal en
+                 pantallas angostas en vez de romper el ancho de la página. --}}
+            @if ($ciudades->isEmpty())
+                <div class="alert alert-warning">
+                    La base de datos no registra ciudades para este país.
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th scope="col">Ciudad</th>
+                                <th scope="col">Distrito</th>
+                                <th scope="col" class="text-end">Población</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($ciudades as $ciudad)
+                                <tr>
+                                    <td>{{ $ciudad->Name }}</td>
+                                    <td class="text-muted">{{ $ciudad->District }}</td>
+                                    <td class="text-end">{{ number_format($ciudad->Population, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
         @endif
 
     </main>

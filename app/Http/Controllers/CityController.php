@@ -33,6 +33,10 @@ class CityController extends Controller
             ? Country::find($datos['pais'])
             : null;
 
-        return view('ciudades.index', compact('paises', 'paisSeleccionado'));
+        $ciudades = $paisSeleccionado
+            ? $paisSeleccionado->cities()->orderByDesc('Population')->get()
+            : collect();
+
+        return view('ciudades.index', compact('paises', 'paisSeleccionado', 'ciudades'));
     }
 }
