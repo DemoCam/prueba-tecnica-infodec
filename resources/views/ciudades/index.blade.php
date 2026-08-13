@@ -12,6 +12,11 @@
             max-height: 60vh;
         }
 
+        .grafico-contenedor {
+            position: relative;
+            height: 340px;
+        }
+
         .tabla-ciudades thead th {
             position: sticky;
             top: 0;
@@ -76,6 +81,21 @@
                     {{ $ciudades->count() }} {{ $ciudades->count() === 1 ? 'ciudad' : 'ciudades' }}
                 </span>
             </h2>
+
+            {{-- Gráfico del top 10. El contenedor lleva altura fija porque
+                 Chart.js dimensiona el canvas contra su padre: sin una altura
+                 definida cae a su valor por defecto de 150px y las diez barras
+                 quedan aplastadas. --}}
+            @if ($ciudades->isNotEmpty())
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header fw-semibold">Población de las 10 más pobladas</div>
+                    <div class="card-body">
+                        <div class="grafico-contenedor">
+                            <canvas id="grafico-poblacion"></canvas>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             {{-- Los dos top 10 que pide el enunciado. Se apilan en móvil y pasan
                  a dos columnas desde tablet. --}}
@@ -154,6 +174,39 @@
     <footer class="container text-center text-muted small py-4">
         Datos de la base de ejemplo <code>world</code> de MySQL.
     </footer>
+
+    @if ($paisSeleccionado && $ciudades->isNotEmpty())
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+        <script>
+            // `indexAxis: 'y'` vuelve las barras horizontales: con nombres de
+            // ciudad largos se leen mucho mejor que en vertical.
+            new Chart(document.getElementById('grafico-poblacion'), {
+                type: 'bar',
+                data: {
+                    labels: @json($masPobladas->pluck('Name')),
+                    datasets: [{
+                        label: 'Habitantes',
+                        data: @json($masPobladas->pluck('Population')),
+                        backgroundColor: '#198754',
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: (valor) => valor.toLocaleString('es-CO'),
+                            },
+                        },
+                    },
+                },
+            });
+        </script>
+    @endif
 
 </body>
 </html>
