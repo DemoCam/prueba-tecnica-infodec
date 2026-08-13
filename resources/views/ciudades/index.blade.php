@@ -5,20 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ config('app.name') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <main class="container py-4">
+    <style>
+        /* En móvil la tabla completa puede ser muy larga, así que se le limita
+           la altura y el encabezado queda fijo al hacer scroll dentro de ella. */
+        .tabla-ciudades {
+            max-height: 60vh;
+        }
 
-        {{-- Encabezado --}}
-        <header class="mb-4">
-            <h1 class="h3">Ciudades del Mundo</h1>
-            <p class="text-muted mb-0">Consulta las ciudades de un país y su población.</p>
-        </header>
+        .tabla-ciudades thead th {
+            position: sticky;
+            top: 0;
+            background: var(--bs-body-bg);
+        }
+    </style>
+</head>
+<body class="bg-body-tertiary">
+
+    {{-- Barra superior --}}
+    <nav class="navbar bg-primary" data-bs-theme="dark">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ciudades del Mundo</span>
+        </div>
+    </nav>
+
+    <main class="container py-3 py-md-4">
 
         {{-- Selector de país. Envía por GET para que la consulta quede en la URL
              y se pueda compartir o recargar sin reenviar un formulario. --}}
-        <form method="GET" action="{{ route('ciudades.index') }}" class="card card-body mb-4">
-            <label for="pais" class="form-label fw-semibold">País</label>
+        <form method="GET" action="{{ route('ciudades.index') }}" class="card card-body shadow-sm mb-4">
+            <label for="pais" class="form-label fw-semibold">
+                ¿A qué país viajas?
+            </label>
             <div class="row g-2">
                 <div class="col-12 col-sm">
                     <select name="pais" id="pais"
@@ -51,16 +68,16 @@
                 </span>
             </h2>
 
-            {{-- Los dos top 10 que pide el enunciado, uno al lado del otro en
-                 escritorio y apilados en móvil. --}}
+            {{-- Los dos top 10 que pide el enunciado. Se apilan en móvil y pasan
+                 a dos columnas desde tablet. --}}
             @if ($ciudades->isNotEmpty())
                 <div class="row g-3 mb-4">
-                    <div class="col-12 col-lg-6">
-                        <div class="card h-100">
+                    <div class="col-12 col-md-6">
+                        <div class="card h-100 shadow-sm">
                             <div class="card-header fw-semibold">Top 10 más pobladas</div>
                             <ol class="list-group list-group-numbered list-group-flush">
                                 @foreach ($masPobladas as $ciudad)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
                                         <span>{{ $ciudad->Name }}</span>
                                         <span class="badge text-bg-success rounded-pill">
                                             {{ number_format($ciudad->Population, 0, ',', '.') }}
@@ -71,12 +88,12 @@
                         </div>
                     </div>
 
-                    <div class="col-12 col-lg-6">
-                        <div class="card h-100">
+                    <div class="col-12 col-md-6">
+                        <div class="card h-100 shadow-sm">
                             <div class="card-header fw-semibold">Top 10 menos pobladas</div>
                             <ol class="list-group list-group-numbered list-group-flush">
                                 @foreach ($menosPobladas as $ciudad)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
                                         <span>{{ $ciudad->Name }}</span>
                                         <span class="badge text-bg-secondary rounded-pill">
                                             {{ number_format($ciudad->Population, 0, ',', '.') }}
@@ -96,30 +113,38 @@
                     La base de datos no registra ciudades para este país.
                 </div>
             @else
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th scope="col">Ciudad</th>
-                                <th scope="col">Distrito</th>
-                                <th scope="col" class="text-end">Población</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($ciudades as $ciudad)
+                <div class="card shadow-sm">
+                    <div class="card-header fw-semibold">Todas las ciudades</div>
+                    <div class="table-responsive tabla-ciudades">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <td>{{ $ciudad->Name }}</td>
-                                    <td class="text-muted">{{ $ciudad->District }}</td>
-                                    <td class="text-end">{{ number_format($ciudad->Population, 0, ',', '.') }}</td>
+                                    <th scope="col">Ciudad</th>
+                                    <th scope="col" class="d-none d-sm-table-cell">Distrito</th>
+                                    <th scope="col" class="text-end">Población</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach ($ciudades as $ciudad)
+                                    <tr>
+                                        <td>{{ $ciudad->Name }}</td>
+                                        <td class="text-muted d-none d-sm-table-cell">{{ $ciudad->District }}</td>
+                                        <td class="text-end">{{ number_format($ciudad->Population, 0, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
 
         @endif
 
     </main>
+
+    <footer class="container text-center text-muted small py-4">
+        Datos de la base de ejemplo <code>world</code> de MySQL.
+    </footer>
+
 </body>
 </html>
