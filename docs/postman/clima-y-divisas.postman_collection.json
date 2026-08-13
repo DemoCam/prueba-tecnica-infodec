@@ -1,0 +1,146 @@
+{
+  "info": {
+    "name": "Prueba INFODEC - Clima y Divisas",
+    "description": "Colección de la Pregunta 4 de la prueba técnica de Analista de Soporte Nivel 1.\n\nCubre el servicio de clima que consume la aplicación web (OpenWeatherMap) y un servicio de cambio de moneda, incluidos los casos de error documentados.\n\n**Antes de ejecutar:** define la variable `openweather_api_key` en la colección o en un entorno de Postman. Nunca guardes la key dentro de este archivo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "openweather_url",
+      "value": "https://api.openweathermap.org/data/2.5/weather",
+      "type": "string"
+    },
+    {
+      "key": "openweather_api_key",
+      "value": "",
+      "type": "string",
+      "description": "Pega aquí tu key de openweathermap.org. Una key recién creada tarda hasta ~2 horas en activarse."
+    },
+    {
+      "key": "divisas_url",
+      "value": "https://open.er-api.com/v6/latest",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Clima - caso exitoso (Lima)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{openweather_url}}?q=Lima,PE&units=metric&lang=es&appid={{openweather_api_key}}",
+          "host": ["{{openweather_url}}"],
+          "query": [
+            { "key": "q", "value": "Lima,PE", "description": "Ciudad y código ISO del país. El código desambigua capitales repetidas." },
+            { "key": "units", "value": "metric", "description": "Sin este parámetro la API devuelve grados Kelvin." },
+            { "key": "lang", "value": "es", "description": "Descripción del clima en español." },
+            { "key": "appid", "value": "{{openweather_api_key}}" }
+          ]
+        },
+        "description": "Petición equivalente a la que hace la aplicación web al seleccionar Perú.\n\n**Esperado:** HTTP 200 con `main.temp` en grados Celsius y `weather[0].description` en español."
+      },
+      "response": []
+    },
+    {
+      "name": "Clima - sin units, devuelve Kelvin",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{openweather_url}}?q=Lima,PE&appid={{openweather_api_key}}",
+          "host": ["{{openweather_url}}"],
+          "query": [
+            { "key": "q", "value": "Lima,PE" },
+            { "key": "appid", "value": "{{openweather_api_key}}" }
+          ]
+        },
+        "description": "Demuestra por qué la aplicación envía `units=metric`.\n\n**Esperado:** HTTP 200, pero `main.temp` viene en Kelvin (unos 293 en vez de 20). Es un error silencioso: la petición no falla, el dato simplemente está en otra escala."
+      },
+      "response": []
+    },
+    {
+      "name": "Error 401 - key invalida",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{openweather_url}}?q=Lima,PE&units=metric&appid=key_invalida_a_proposito",
+          "host": ["{{openweather_url}}"],
+          "query": [
+            { "key": "q", "value": "Lima,PE" },
+            { "key": "units", "value": "metric" },
+            { "key": "appid", "value": "key_invalida_a_proposito", "description": "Key deliberadamente incorrecta." }
+          ]
+        },
+        "description": "**Esperado:** HTTP 401 con `{\"cod\":401,\"message\":\"Invalid API key...\"}`.\n\nEste mismo 401 aparece cuando la key es correcta pero fue creada hace poco: OpenWeather tarda entre ~10 minutos y ~2 horas en activarla. En la aplicación se maneja mostrando un aviso sin interrumpir el resto de la pantalla."
+      },
+      "response": []
+    },
+    {
+      "name": "Error 404 - ciudad no encontrada",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{openweather_url}}?q=Santafé de Bogotá,CO&units=metric&appid={{openweather_api_key}}",
+          "host": ["{{openweather_url}}"],
+          "query": [
+            { "key": "q", "value": "Santafé de Bogotá,CO", "description": "Nombre tal como lo guarda la base `world`." },
+            { "key": "units", "value": "metric" },
+            { "key": "appid", "value": "{{openweather_api_key}}" }
+          ]
+        },
+        "description": "**Esperado:** HTTP 404 con `{\"cod\":\"404\",\"message\":\"city not found\"}`.\n\n`Santafé de Bogotá` fue el nombre oficial de la ciudad solo entre 1991 y 2000, y la base `world` es de esa época. No son las tildes: `Santafe de Bogota,CO` también falla.\n\nCompara con la petición siguiente."
+      },
+      "response": []
+    },
+    {
+      "name": "404 corregido - Bogota",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{openweather_url}}?q=Bogotá,CO&units=metric&lang=es&appid={{openweather_api_key}}",
+          "host": ["{{openweather_url}}"],
+          "query": [
+            { "key": "q", "value": "Bogotá,CO", "description": "Nombre actual de la ciudad." },
+            { "key": "units", "value": "metric" },
+            { "key": "lang", "value": "es" },
+            { "key": "appid", "value": "{{openweather_api_key}}" }
+          ]
+        },
+        "description": "**Esperado:** HTTP 200.\n\nLa solución aplicada en el código: una tabla de correcciones traduce los nombres que el dataset arrastra desactualizados antes de consultar la API."
+      },
+      "response": []
+    },
+    {
+      "name": "Divisas - tasas base USD",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{divisas_url}}/USD",
+          "host": ["{{divisas_url}}"],
+          "path": ["USD"]
+        },
+        "description": "Servicio de cambio de moneda, la otra opción que ofrecía el enunciado. No requiere API key.\n\n**Esperado:** HTTP 200 con `result: \"success\"` y el objeto `rates`, que incluye `COP`."
+      },
+      "response": []
+    },
+    {
+      "name": "Divisas - moneda inexistente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{divisas_url}}/XXX",
+          "host": ["{{divisas_url}}"],
+          "path": ["XXX"]
+        },
+        "description": "**Esperado:** HTTP **200** con `{\"result\":\"error\",\"error-type\":\"unsupported-code\"}`.\n\nEs el caso más instructivo de la colección: **el código HTTP dice 200, pero la operación falló**. Un cliente que solo mire el status code daría la petición por buena y seguiría adelante con una respuesta que no tiene tasas.\n\nEs el mismo patrón de la Pregunta 5 de esta prueba, donde la transacción devuelve `Htpp_Status: 201` y sin embargo su `status` es `DECLINED`.\n\n**La regla: el código HTTP describe el transporte, no el resultado. La respuesta está en el cuerpo.**"
+      },
+      "response": []
+    }
+  ]
+}
