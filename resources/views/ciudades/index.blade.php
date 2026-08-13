@@ -61,9 +61,18 @@
 
         @if ($paisSeleccionado)
 
-            <h2 class="h4 mb-3">
-                {{ $paisSeleccionado->Name }}
-                <span class="badge text-bg-secondary align-middle">
+            {{-- La bandera usa Code2 (ISO de dos letras), no Code, porque flagcdn
+                 indexa por el código de dos. Tres países del dataset ya no existen
+                 —Yugoslavia, Antillas Neerlandesas y Timor Oriental— y no tienen
+                 bandera publicada, así que la imagen se retira sola si no carga. --}}
+            <h2 class="h4 mb-3 d-flex align-items-center flex-wrap gap-2">
+                <img src="https://flagcdn.com/w80/{{ strtolower($paisSeleccionado->Code2) }}.png"
+                     alt="Bandera de {{ $paisSeleccionado->Name }}"
+                     width="40" height="30"
+                     class="rounded border"
+                     onerror="this.remove()">
+                <span>{{ $paisSeleccionado->Name }}</span>
+                <span class="badge text-bg-secondary">
                     {{ $ciudades->count() }} {{ $ciudades->count() === 1 ? 'ciudad' : 'ciudades' }}
                 </span>
             </h2>
