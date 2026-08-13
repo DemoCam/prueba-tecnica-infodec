@@ -20,6 +20,24 @@ use Illuminate\View\View;
 class CityController extends Controller
 {
     /**
+     * Capitales cuyo nombre en el dataset ya no es el que usa el servicio de clima.
+     *
+     * `world` es una foto de alrededor del año 2000 y guarda nombres en idioma
+     * local o que desde entonces cambiaron. Cada corrección se verificó una por
+     * una contra la API.
+     *
+     * @var array<string, string>
+     */
+    private const CAPITALES_RENOMBRADAS = [
+        'Santafé de Bogotá' => 'Bogotá',
+        'Athenai' => 'Athens',
+        'Bucuresti' => 'Bucharest',
+        'Toskent' => 'Tashkent',
+        'Rangoon (Yangon)' => 'Yangon',
+        'Santo Domingo de Guzmán' => 'Santo Domingo',
+    ];
+
+    /**
      * Muestra la pantalla de consulta.
      *
      * @return View
@@ -142,13 +160,19 @@ class CityController extends Controller
     }
 
     /**
-     * Limpia el nombre de la capital antes de consultarlo.
+     * Traduce el nombre que guarda el dataset al que entiende el servicio de clima.
      *
-     * El dataset guarda variantes del nombre entre corchetes, como
-     * `Bruxelles [Brussel]` o `Helsinki [Helsingfors]`, que la API no reconoce.
+     * Son tres desajustes distintos, todos por la antigüedad de la base `world`.
      */
     private function nombreConsultable(string $nombre): string
     {
-        return trim(explode('[', $nombre)[0]);
+        // Variantes del nombre entre corchetes: `Bruxelles [Brussel]`.
+        $nombre = trim(explode('[', $nombre)[0]);
+
+        // El dataset escribe `Saint John´s` con acento agudo (U+00B4) donde la
+        // API espera el apóstrofe ASCII. Verificado con HEX() sobre la columna.
+        $nombre = str_replace('´', "'", $nombre);
+
+        return self::CAPITALES_RENOMBRADAS[$nombre] ?? $nombre;
     }
 }
