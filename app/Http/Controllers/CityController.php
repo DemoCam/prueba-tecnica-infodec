@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Country;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -17,8 +19,20 @@ class CityController extends Controller
      *
      * @return View
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('ciudades.index');
+        // `exists` deja que la propia base valide el código: si alguien manda un
+        // país inventado en la URL, la petición se rechaza antes de consultar.
+        $datos = $request->validate([
+            'pais' => ['nullable', 'string', 'size:3', 'exists:country,Code'],
+        ]);
+
+        $paises = Country::orderBy('Name')->get(['Code', 'Name']);
+
+        $paisSeleccionado = isset($datos['pais'])
+            ? Country::find($datos['pais'])
+            : null;
+
+        return view('ciudades.index', compact('paises', 'paisSeleccionado'));
     }
 }
