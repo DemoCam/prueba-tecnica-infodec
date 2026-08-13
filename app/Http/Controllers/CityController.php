@@ -56,8 +56,22 @@ class CityController extends Controller
             ? Country::find($datos['pais'])
             : null;
 
+        // El porcentaje se calcula en la consulta y no en la vista para no repetir
+        // la misma división en cada una de las filas de la tabla.
         $ciudades = $paisSeleccionado
-            ? $paisSeleccionado->cities()->orderByDesc('Population')->get()
+            ? $paisSeleccionado->cities()
+                ->selectRaw('city.*, Population * 100 / ? AS PorcentajePais', [$paisSeleccionado->Population])
+                ->orderByDesc('Population')
+                ->get()
+            : collect();
+
+        // 49 países del dataset no registran ningún idioma oficial, así que esto
+        // puede venir vacío y la vista tiene que contemplarlo.
+        $idiomasOficiales = $paisSeleccionado
+            ? $paisSeleccionado->languages()
+                ->where('IsOfficial', 'T')
+                ->orderByDesc('Percentage')
+                ->pluck('Language')
             : collect();
 
         // Los dos top 10 salen de la coleccion ya cargada en lugar de dos
@@ -75,6 +89,7 @@ class CityController extends Controller
             'ciudades',
             'masPobladas',
             'menosPobladas',
+            'idiomasOficiales',
             'clima',
         ));
     }

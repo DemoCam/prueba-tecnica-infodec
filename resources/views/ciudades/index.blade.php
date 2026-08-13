@@ -82,6 +82,14 @@
                 </span>
             </h2>
 
+            {{-- Idiomas oficiales. Hay 49 países que no registran ninguno. --}}
+            @if ($idiomasOficiales->isNotEmpty())
+                <p class="text-muted mb-3">
+                    {{ $idiomasOficiales->count() === 1 ? 'Idioma oficial' : 'Idiomas oficiales' }}:
+                    <span class="text-body">{{ $idiomasOficiales->implode(' · ') }}</span>
+                </p>
+            @endif
+
             {{-- Clima actual de la capital. Cada fallo posible tiene su propio
                  mensaje: la causa es distinta y lo que el usuario puede hacer al
                  respecto también. En ningún caso se interrumpe el resto. --}}
@@ -192,6 +200,7 @@
                                     <th scope="col">Ciudad</th>
                                     <th scope="col" class="d-none d-sm-table-cell">Distrito</th>
                                     <th scope="col" class="text-end">Población</th>
+                                    <th scope="col" class="text-end">% del país</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -200,6 +209,7 @@
                                         <td>{{ $ciudad->Name }}</td>
                                         <td class="text-muted d-none d-sm-table-cell">{{ $ciudad->District }}</td>
                                         <td class="text-end">{{ number_format($ciudad->Population, 0, ',', '.') }}</td>
+                                        <td class="text-end text-muted">{{ number_format($ciudad->PorcentajePais, 2, ',', '.') }} %</td>
                                     </tr>
                                 @endforeach
                             </tbody>
