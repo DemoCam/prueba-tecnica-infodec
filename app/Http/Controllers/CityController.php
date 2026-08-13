@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Country;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 /**
@@ -61,35 +64,56 @@ class CityController extends Controller
     /**
      * Consulta el clima actual de la capital del país en OpenWeatherMap.
      *
-     * @return array<string, mixed>|null Datos del clima, o null si no se pudo obtener.
+     * Nunca lanza excepción ni devuelve null: siempre entrega un arreglo con la
+     * clave `estado`, para que la vista pueda explicarle al usuario qué pasó sin
+     * que el resto de la pantalla se vea afectado.
+     *
+     * @return array<string, mixed> `estado` es ok, sin_capital, no_encontrada o sin_servicio.
      */
-    private function climaDeLaCapital(Country $pais): ?array
+    private function climaDeLaCapital(Country $pais): array
     {
         // `Capital` es nullable: siete países del dataset no tienen capital.
         if ($pais->capital === null) {
-            return null;
+            return ['estado' => 'sin_capital'];
         }
 
         // Diez minutos: el clima no cambia de un minuto a otro, y la capa gratuita
         // de OpenWeather limita las llamadas por minuto. La clave lleva el código
         // del país porque cada uno consulta una capital distinta.
         return Cache::remember("clima.{$pais->Code}", now()->addMinutes(10), function () use ($pais) {
-            // Se envía el código ISO junto al nombre para desambiguar las capitales
-            // que se repiten entre países, como Santiago o San José.
-            $respuesta = Http::get(config('services.openweather.url'), [
-                'q' => $pais->capital->Name.','.$pais->Code2,
-                'units' => 'metric',
-                'lang' => 'es',
-                'appid' => config('services.openweather.key'),
-            ]);
+            $capital = $this->nombreConsultable($pais->capital->Name);
 
-            // Se cachea un arreglo vacío y no null: `remember` considera null como
-            // "no hay nada guardado" y volvería a llamar a la API en cada visita.
+            try {
+                // El código ISO desambigua las capitales que se repiten entre países,
+                // como Santiago o San José.
+                $respuesta = $this->consultarClima($capital.','.$pais->Code2);
+
+                // Tres códigos del dataset ya no existen (AN, TP, YU) y hacen fallar
+                // la búsqueda por país, aunque la ciudad sí esté en la API.
+                if ($respuesta->status() === 404) {
+                    $respuesta = $this->consultarClima($capital);
+                }
+            } catch (ConnectionException $e) {
+                // Cubre la API caída y el timeout. Se registra porque es lo primero
+                // que se revisa cuando un usuario reporta que no ve el clima.
+                Log::warning('Clima no disponible para '.$pais->Name.': '.$e->getMessage());
+
+                return ['estado' => 'sin_servicio'];
+            }
+
+            if ($respuesta->status() === 404) {
+                return ['estado' => 'no_encontrada', 'capital' => $pais->capital->Name];
+            }
+
+            // Aquí caen la key inválida (401) y los errores del proveedor (5xx).
             if ($respuesta->failed()) {
-                return [];
+                Log::warning('Clima no disponible para '.$pais->Name.': HTTP '.$respuesta->status());
+
+                return ['estado' => 'sin_servicio'];
             }
 
             return [
+                'estado' => 'ok',
                 'ciudad' => $respuesta->json('name'),
                 'temperatura' => round($respuesta->json('main.temp')),
                 'sensacion' => round($respuesta->json('main.feels_like')),
@@ -98,5 +122,33 @@ class CityController extends Controller
                 'icono' => $respuesta->json('weather.0.icon'),
             ];
         });
+    }
+
+    /**
+     * Lanza la petición a OpenWeatherMap con el término de búsqueda indicado.
+     *
+     * @throws ConnectionException Si la API no responde dentro del tiempo límite.
+     */
+    private function consultarClima(string $busqueda): Response
+    {
+        // Cinco segundos: sin límite, una API lenta dejaría la pantalla colgada
+        // esperando indefinidamente por un dato que es secundario.
+        return Http::timeout(5)->get(config('services.openweather.url'), [
+            'q' => $busqueda,
+            'units' => 'metric',
+            'lang' => 'es',
+            'appid' => config('services.openweather.key'),
+        ]);
+    }
+
+    /**
+     * Limpia el nombre de la capital antes de consultarlo.
+     *
+     * El dataset guarda variantes del nombre entre corchetes, como
+     * `Bruxelles [Brussel]` o `Helsinki [Helsingfors]`, que la API no reconoce.
+     */
+    private function nombreConsultable(string $nombre): string
+    {
+        return trim(explode('[', $nombre)[0]);
     }
 }

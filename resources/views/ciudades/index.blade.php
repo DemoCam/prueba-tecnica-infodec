@@ -82,9 +82,10 @@
                 </span>
             </h2>
 
-            {{-- Clima actual de la capital. Conecta esta pantalla con la API
-                 externa de la Pregunta 4 del enunciado. --}}
-            @if ($clima)
+            {{-- Clima actual de la capital. Cada fallo posible tiene su propio
+                 mensaje: la causa es distinta y lo que el usuario puede hacer al
+                 respecto también. En ningún caso se interrumpe el resto. --}}
+            @if ($clima['estado'] === 'ok')
                 <div class="card shadow-sm mb-4">
                     <div class="card-body d-flex align-items-center flex-wrap gap-3">
                         <img src="https://openweathermap.org/img/wn/{{ $clima['icono'] }}@2x.png"
@@ -102,6 +103,23 @@
                             Humedad {{ $clima['humedad'] }} %
                         </div>
                     </div>
+                </div>
+            @elseif ($clima['estado'] === 'sin_capital')
+                <div class="alert alert-secondary d-flex gap-2">
+                    <strong>Sin clima.</strong>
+                    La base de datos no registra una capital para este país.
+                </div>
+            @elseif ($clima['estado'] === 'no_encontrada')
+                <div class="alert alert-secondary d-flex gap-2">
+                    <strong>Sin clima.</strong>
+                    El servicio meteorológico no reconoce
+                    «{{ $clima['capital'] }}», que es como esta base nombra a la capital.
+                </div>
+            @else
+                <div class="alert alert-warning d-flex gap-2">
+                    <strong>Clima no disponible.</strong>
+                    No se pudo consultar el servicio meteorológico. El resto de la
+                    información de la pantalla no se ve afectada.
                 </div>
             @endif
 
