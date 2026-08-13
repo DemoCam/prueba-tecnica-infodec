@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Country;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
@@ -69,26 +70,33 @@ class CityController extends Controller
             return null;
         }
 
-        // Se envía el código ISO junto al nombre para desambiguar las capitales
-        // que se repiten entre países, como Santiago o San José.
-        $respuesta = Http::get(config('services.openweather.url'), [
-            'q' => $pais->capital->Name.','.$pais->Code2,
-            'units' => 'metric',
-            'lang' => 'es',
-            'appid' => config('services.openweather.key'),
-        ]);
+        // Diez minutos: el clima no cambia de un minuto a otro, y la capa gratuita
+        // de OpenWeather limita las llamadas por minuto. La clave lleva el código
+        // del país porque cada uno consulta una capital distinta.
+        return Cache::remember("clima.{$pais->Code}", now()->addMinutes(10), function () use ($pais) {
+            // Se envía el código ISO junto al nombre para desambiguar las capitales
+            // que se repiten entre países, como Santiago o San José.
+            $respuesta = Http::get(config('services.openweather.url'), [
+                'q' => $pais->capital->Name.','.$pais->Code2,
+                'units' => 'metric',
+                'lang' => 'es',
+                'appid' => config('services.openweather.key'),
+            ]);
 
-        if ($respuesta->failed()) {
-            return null;
-        }
+            // Se cachea un arreglo vacío y no null: `remember` considera null como
+            // "no hay nada guardado" y volvería a llamar a la API en cada visita.
+            if ($respuesta->failed()) {
+                return [];
+            }
 
-        return [
-            'ciudad' => $respuesta->json('name'),
-            'temperatura' => round($respuesta->json('main.temp')),
-            'sensacion' => round($respuesta->json('main.feels_like')),
-            'humedad' => $respuesta->json('main.humidity'),
-            'descripcion' => $respuesta->json('weather.0.description'),
-            'icono' => $respuesta->json('weather.0.icon'),
-        ];
+            return [
+                'ciudad' => $respuesta->json('name'),
+                'temperatura' => round($respuesta->json('main.temp')),
+                'sensacion' => round($respuesta->json('main.feels_like')),
+                'humedad' => $respuesta->json('main.humidity'),
+                'descripcion' => $respuesta->json('weather.0.description'),
+                'icono' => $respuesta->json('weather.0.icon'),
+            ];
+        });
     }
 }
