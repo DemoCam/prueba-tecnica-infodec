@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * País de la base de datos `world`.
@@ -28,4 +30,41 @@ class Country extends Model
 
     /** @var bool La tabla no tiene columnas created_at ni updated_at. */
     public $timestamps = false;
+
+    /**
+     * Ciudades del país.
+     *
+     * Hay que nombrar las dos columnas porque Eloquent asumiría `country_code`
+     * y `id`, que no son los nombres reales.
+     *
+     * @return HasMany
+     */
+    public function cities()
+    {
+        return $this->hasMany(City::class, 'CountryCode', 'Code');
+    }
+
+    /**
+     * Idiomas registrados para el país, oficiales y no oficiales.
+     *
+     * @return HasMany
+     */
+    public function languages()
+    {
+        return $this->hasMany(CountryLanguage::class, 'CountryCode', 'Code');
+    }
+
+    /**
+     * Ciudad capital del país.
+     *
+     * Va en sentido contrario a `cities()`: la columna `Capital` vive en
+     * `country` y apunta a `city.ID`, por eso es belongsTo. Puede devolver null
+     * porque hay siete países sin capital registrada.
+     *
+     * @return BelongsTo
+     */
+    public function capital()
+    {
+        return $this->belongsTo(City::class, 'Capital', 'ID');
+    }
 }

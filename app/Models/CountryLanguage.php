@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Idioma hablado en un país, según la tabla `countrylanguage`.
@@ -22,4 +23,14 @@ class CountryLanguage extends Model
 
     /** @var bool La tabla no tiene columnas created_at ni updated_at. */
     public $timestamps = false;
+
+    /**
+     * País donde se habla el idioma.
+     *
+     * @return BelongsTo
+     */
+    public function country()
+    {
+        return $this->belongsTo(Country::class, 'CountryCode', 'Code');
+    }
 }
