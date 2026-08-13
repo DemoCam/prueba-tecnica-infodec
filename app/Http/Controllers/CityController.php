@@ -37,6 +37,17 @@ class CityController extends Controller
             ? $paisSeleccionado->cities()->orderByDesc('Population')->get()
             : collect();
 
-        return view('ciudades.index', compact('paises', 'paisSeleccionado', 'ciudades'));
+        // Los dos top 10 salen de la coleccion ya cargada en lugar de dos
+        // consultas nuevas: son las mismas filas, solo ordenadas al reves.
+        $masPobladas = $ciudades->take(10);
+        $menosPobladas = $ciudades->reverse()->take(10)->values();
+
+        return view('ciudades.index', compact(
+            'paises',
+            'paisSeleccionado',
+            'ciudades',
+            'masPobladas',
+            'menosPobladas',
+        ));
     }
 }

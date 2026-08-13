@@ -51,7 +51,45 @@
                 </span>
             </h2>
 
-            {{-- Tabla de ciudades. `table-responsive` le da scroll horizontal en
+            {{-- Los dos top 10 que pide el enunciado, uno al lado del otro en
+                 escritorio y apilados en móvil. --}}
+            @if ($ciudades->isNotEmpty())
+                <div class="row g-3 mb-4">
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header fw-semibold">Top 10 más pobladas</div>
+                            <ol class="list-group list-group-numbered list-group-flush">
+                                @foreach ($masPobladas as $ciudad)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ $ciudad->Name }}</span>
+                                        <span class="badge text-bg-success rounded-pill">
+                                            {{ number_format($ciudad->Population, 0, ',', '.') }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header fw-semibold">Top 10 menos pobladas</div>
+                            <ol class="list-group list-group-numbered list-group-flush">
+                                @foreach ($menosPobladas as $ciudad)
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ $ciudad->Name }}</span>
+                                        <span class="badge text-bg-secondary rounded-pill">
+                                            {{ number_format($ciudad->Population, 0, ',', '.') }}
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Listado completo. `table-responsive` le da scroll horizontal en
                  pantallas angostas en vez de romper el ancho de la página. --}}
             @if ($ciudades->isEmpty())
                 <div class="alert alert-warning">
