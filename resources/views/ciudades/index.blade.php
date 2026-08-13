@@ -82,6 +82,29 @@
                 </span>
             </h2>
 
+            {{-- Clima actual de la capital. Conecta esta pantalla con la API
+                 externa de la Pregunta 4 del enunciado. --}}
+            @if ($clima)
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body d-flex align-items-center flex-wrap gap-3">
+                        <img src="https://openweathermap.org/img/wn/{{ $clima['icono'] }}@2x.png"
+                             alt="{{ $clima['descripcion'] }}"
+                             width="64" height="64">
+                        <div>
+                            <div class="text-muted small text-uppercase">Clima en la capital</div>
+                            <div class="fs-4 fw-semibold">
+                                {{ $clima['ciudad'] }} · {{ $clima['temperatura'] }} °C
+                            </div>
+                            <div class="text-capitalize">{{ $clima['descripcion'] }}</div>
+                        </div>
+                        <div class="ms-sm-auto text-muted small">
+                            Sensación térmica {{ $clima['sensacion'] }} °C<br>
+                            Humedad {{ $clima['humedad'] }} %
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Gráfico del top 10. El contenedor lleva altura fija porque
                  Chart.js dimensiona el canvas contra su padre: sin una altura
                  definida cae a su valor por defecto de 150px y las diez barras

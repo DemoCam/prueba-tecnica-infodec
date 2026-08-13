@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Country;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
 /**
@@ -42,12 +43,52 @@ class CityController extends Controller
         $masPobladas = $ciudades->take(10);
         $menosPobladas = $ciudades->reverse()->take(10)->values();
 
+        $clima = $paisSeleccionado
+            ? $this->climaDeLaCapital($paisSeleccionado)
+            : null;
+
         return view('ciudades.index', compact(
             'paises',
             'paisSeleccionado',
             'ciudades',
             'masPobladas',
             'menosPobladas',
+            'clima',
         ));
+    }
+
+    /**
+     * Consulta el clima actual de la capital del país en OpenWeatherMap.
+     *
+     * @return array<string, mixed>|null Datos del clima, o null si no se pudo obtener.
+     */
+    private function climaDeLaCapital(Country $pais): ?array
+    {
+        // `Capital` es nullable: siete países del dataset no tienen capital.
+        if ($pais->capital === null) {
+            return null;
+        }
+
+        // Se envía el código ISO junto al nombre para desambiguar las capitales
+        // que se repiten entre países, como Santiago o San José.
+        $respuesta = Http::get(config('services.openweather.url'), [
+            'q' => $pais->capital->Name.','.$pais->Code2,
+            'units' => 'metric',
+            'lang' => 'es',
+            'appid' => config('services.openweather.key'),
+        ]);
+
+        if ($respuesta->failed()) {
+            return null;
+        }
+
+        return [
+            'ciudad' => $respuesta->json('name'),
+            'temperatura' => round($respuesta->json('main.temp')),
+            'sensacion' => round($respuesta->json('main.feels_like')),
+            'humedad' => $respuesta->json('main.humidity'),
+            'descripcion' => $respuesta->json('weather.0.description'),
+            'icono' => $respuesta->json('weather.0.icon'),
+        ];
     }
 }

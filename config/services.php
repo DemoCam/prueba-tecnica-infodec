@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    /*
+     * API de clima usada en la pantalla de ciudades. La llave se lee aquí y no
+     * con env() en el controlador porque al cachear la configuración con
+     * `config:cache` las llamadas a env() fuera de este directorio devuelven null.
+     */
+    'openweather' => [
+        'key' => env('OPENWEATHER_API_KEY'),
+        'url' => 'https://api.openweathermap.org/data/2.5/weather',
+    ],
+
 ];
