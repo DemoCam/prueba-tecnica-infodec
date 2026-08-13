@@ -38,7 +38,7 @@ DB_DATABASE=world
 DB_USERNAME=root
 DB_PASSWORD=
 
-OPENWEATHER_API_KEY=tu_key_aqui
+OPENWEATHER_API_KEY=
 ```
 
 Finalmente:
